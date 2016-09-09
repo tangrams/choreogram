@@ -2,6 +2,14 @@
 
 # Choreogram: tangram's n sync
 
+Sync one or more tangrams together, to see the same map at the same position than other person
+
+![](imgs/01.gif) 
+
+... or see different versions of a map side by side in the same place
+
+![](imgs/00.gif)
+
 #### query parameters
 
 - url: the scene file to load
