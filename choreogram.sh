@@ -66,8 +66,7 @@ case "$1" in
         ;;
 
     start)
-        while :
-        do
+        while : ;do
             npm start
             sleep 5
         done
