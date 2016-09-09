@@ -63,6 +63,10 @@ case "$1" in
         fi
 
         npm install
+
+        if [ ! -e key.pem ] && [ ! -e cert.pem ]; then
+            openssl req -new -x509 -sha256 -newkey rsa:2048 -nodes -keyout key.pem -days 365 -out cert.pem
+        fi 
         ;;
 
     start)

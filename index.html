@@ -285,7 +285,7 @@
 
                 layer.addTo(map);
 
-                var socket = io('http://'+SERVER+':'+PORT.toString());
+                var socket = io('https://'+SERVER+':'+PORT.toString());
                 socket.on('connect', function () {
                     var broadcast_pos = function() {
                         socket.send({ pos: map.getCenter(), zoom:map.getZoom()});
