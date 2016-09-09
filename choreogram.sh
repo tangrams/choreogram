@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# If something goes wrong terminate this script
-set -e
-
 OS=$(uname)
 DIST="UNKNOWN"
 
@@ -67,7 +64,11 @@ case "$1" in
         ;;
 
     start)
-        npm start
+        while :
+        do
+            npm start
+            sleep 5
+        done
         ;;
 
     *)
