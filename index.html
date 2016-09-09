@@ -288,18 +288,29 @@
 
                 var socket = io(window.location.protocol+'//'+SERVER+':'+PORT.toString());
                 socket.on('connect', function () {
-                    var broadcast_pos = function() {
-                        socket.send({ pos: map.getCenter(), zoom:map.getZoom()});
+                    var channel = 'public';
+
+                    if (query['channel']) {
+                        channel = query['channel'];
                     }
-                    console.log("Connected to ", SERVER, PORT);
-                    broadcast_pos();
+
+                    console.log('Joining', channel, 'channel');
+                    socket.emit('join', channel);
+
+                    var broadcast_pos = function() {
+                        console.log("sending");
+                        socket.emit("message", { channel: channel, pos: map.getCenter(), zoom:map.getZoom()});
+                    }
 
                     map.on('drag', function () {
                         broadcast_pos();
                     });
 
-                    socket.on('message', function (msg) {
-                        map.setView(msg.pos,msg.zoom);
+                    socket.on("message", function (msg) {
+                        console.log("GOT", msg);
+                        if (msg.channel === channel) {
+                            map.setView(msg.pos,msg.zoom);
+                        }
                     });
                 });
 
