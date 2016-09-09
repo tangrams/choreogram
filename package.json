@@ -4,6 +4,7 @@
   "description": "Tangram's n sync",
   "main": "app.js",
   "scripts": {
+    "install": "./choreogram.sh install",
     "start": "node app.js"
   },
   "repository": {
