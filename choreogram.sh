@@ -61,6 +61,8 @@ case "$1" in
             brew upgrade
             brew install $DEPS_COMMON $DEPS_DARWIN
         fi
+
+        npm install
         ;;
 
     start)
