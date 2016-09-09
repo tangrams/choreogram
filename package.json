@@ -1,0 +1,24 @@
+{
+  "name": "choreogram",
+  "version": "1.0.0",
+  "description": "Tangram's n sync",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "www.github.com/tangrams/choreogram"
+  },
+  "keywords": [
+    "tangram",
+    "map",
+    "websocket"
+  ],
+  "private": false,
+  "author": "Patricio Gonzalez Vivo",
+  "license": "MIT",
+  "dependencies": {
+    "socket.io": "^1.4.8"
+  }
+}
