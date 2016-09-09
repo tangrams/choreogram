@@ -35,6 +35,7 @@
     
     <script>
         var SERVER = "54.209.68.133";
+        // SERVER = "localhost";
         var PORT = 8080; 
         var map, scene, hash, query, scene_url;
 
@@ -285,7 +286,7 @@
 
                 layer.addTo(map);
 
-                var socket = io('https://'+SERVER+':'+PORT.toString());
+                var socket = io(window.location.protocol+'//'+SERVER+':'+PORT.toString());
                 socket.on('connect', function () {
                     var broadcast_pos = function() {
                         socket.send({ pos: map.getCenter(), zoom:map.getZoom()});
@@ -293,8 +294,7 @@
                     console.log("Connected to ", SERVER, PORT);
                     broadcast_pos();
 
-                    // On drag
-                    map.on('move', function () {
+                    map.on('drag', function () {
                         broadcast_pos();
                     });
 
