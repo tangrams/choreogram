@@ -21,17 +21,27 @@
             border: 0px;
             padding: 0px;
         }
+
         #map {
             background: rgba(0, 0, 0, 0);
             height: 100%;
             width: 100%;
             position: absolute;
         }
+
+        .user {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: red;
+            z-index: 2019;
+        }
     </style>
   </head>
 
   <body>
     <div id="map"></div>
+    <div id="overlay"></div>
     
     <script>
         var SERVER = "54.209.68.133";
@@ -300,6 +310,29 @@
                     map.on('drag', function () {
                         socket.emit("view", { position: map.getCenter(), zoom: map.getZoom()})
                     });
+
+                    document.onmousemove = function (event) {
+                        var dot, eventDoc, doc, body, pageX, pageY;
+
+                        event = event || window.event; // IE-ism
+
+                        // If pageX/Y aren't available and clientX/Y are,
+                        // calculate pageX/Y - logic taken from jQuery.
+                        // (This is to support old IE)
+                        if (event.pageX == null && event.clientX != null) {
+                            eventDoc = (event.target && event.target.ownerDocument) || document;
+                            doc = eventDoc.documentElement;
+                            body = eventDoc.body;
+
+                            event.pageX = event.clientX +
+                              (doc && doc.scrollLeft || body && body.scrollLeft || 0) -
+                              (doc && doc.clientLeft || body && body.clientLeft || 0);
+                            event.pageY = event.clientY +
+                              (doc && doc.scrollTop  || body && body.scrollTop  || 0) -
+                              (doc && doc.clientTop  || body && body.clientTop  || 0 );
+                        }
+                        socket.emit("mouse", { x: event.pageX, y: event.pageY});
+                    }
                     
                     socket.on("position", function (msg) {
                         map.setView(msg);
@@ -311,6 +344,39 @@
 
                     socket.on("view", function (msg) {
                         map.setView(msg.position, msg.zoom);
+                    });
+
+                    function addUser(user_id) {
+                        console.log("New user", user_id);
+                        var user_dom = document.createElement("div");
+                        user_dom.id = user_id;
+                        user_dom.innerHTML = user_id;
+                        user_dom.className = "user";
+                        document.getElementById("overlay").appendChild(user_dom); 
+                    }
+
+                    socket.on("user_add", function (user) {
+                       addUser(user);
+                    });
+
+                    socket.on("mouse", function (user, msg) {
+                        // console.log(user, msg);
+
+                        var dom = document.getElementById(user);
+                        if (dom) {
+                            dom.style.left = msg.x + 'px';
+                            dom.style.top = msg.y + 'px';
+                        } else {
+                            addUser(user);
+                        }
+                    });
+
+                    socket.on("user_del", function (user) {
+                        console.log("User", user, "just leave");
+                        var dom = document.getElementById(user);
+                        if (dom) {
+                            document.getElementById("overlay").removeChild(dom);
+                        }
                     });
 
                     socket.on("wellcome", function (msg) {

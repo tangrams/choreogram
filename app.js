@@ -47,6 +47,13 @@ io.on('connection', function (socket) {
         socket.emit('position', channels[socket.channel].position); 
         socket.emit('zoom', channels[socket.channel].zoom);
 
+        socket.broadcast.to(socket.channel).emit('user_add', socket.id);
+
+        socket.on('mouse', function (msg) {
+            users[socket.id].mouse = msg;
+            socket.broadcast.to(socket.channel).emit('mouse', socket.id, msg);
+        });
+
         socket.on('position', function (msg) {
             channels[socket.channel].position = msg;
             socket.broadcast.to(socket.channel).emit('position', msg);
@@ -64,6 +71,7 @@ io.on('connection', function (socket) {
         });
 
         socket.on('disconnect', function () {
+            socket.broadcast.to(socket.channel).emit('user_del', socket.id);
             socket.join(socket.channel);
             channels[socket.channel].n_users -= 1.;
             delete users[socket.id];
