@@ -4,22 +4,23 @@
     http://github.com/tangrams/tangram
     http://mapzen.com
 -->
-<html lang="en-us">
+<html lang='en-us'>
   <head>
-    <meta charset="utf-8">
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta charset='utf-8'>
+    <meta http-equiv='Content-Type' content='text/html; charset=utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'>
     <title>Choreogram: tangram's n sync</title>
 
-    <link id="leafletcss" rel="stylesheet" href="" />
-    <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
-    <script src="src/promise-7.0.4.min.js"></script>
+    <link id='leafletcss' rel='stylesheet' href='' />
+    <script src='https://cdn.socket.io/socket.io-1.4.5.js'></script>
+    <script src='src/promise-7.0.4.min.js'></script>
 
     <style>
         body {
             margin: 0px;
             border: 0px;
             padding: 0px;
+            overflow: hidden;
         }
 
         #map {
@@ -31,23 +32,50 @@
 
         .user {
             position: absolute;
+            z-index: 1000;
+            pointer-events: none;
+            display: inline-block;
+        }
+
+        .user_marker {
+            display: inline-block;
+            background-color: red;
             width: 10px;
             height: 10px;
-            background-color: red;
-            z-index: 2019;
+            border-radius: 50%;
+            border-width: 2px;
+            border-radius: 50%;
+            border-style: solid;
+            border-color: white;
+            color: white;
+            text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+        }
+
+        .user_label {
+            display: inline-block;
+            color: white;
+            text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+        }
+
+        #user_name {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            z-index: 10001;
         }
     </style>
   </head>
 
   <body>
-    <div id="map"></div>
-    <div id="overlay"></div>
+    <div id='map'></div>
+    <div id='overlay'></div>
+    <input id='user_name' type='text' placeholder='Update your username'>
     
     <script>
-        var SERVER = "54.209.68.133";
-        // SERVER = "localhost";
+        var SERVER = '54.209.68.133';
+        // SERVER = 'localhost';
         var PORT = 8080; 
-        var map, scene, hash, query, scene_url;
+        var map, scene, hash, query, scene_url, socket;
 
         function parseQuery (qstr) {
             var query = {};
@@ -65,7 +93,7 @@
             scene_url = 'scene.yaml';
             var default_scene_lib = '0.9';
             var scene_lib = default_scene_lib;
-            var build = "min";
+            var build = 'min';
             query = parseQuery(window.location.search.slice(1));
             if (query.scene) {
                 // ?scene= is the parameter used by Tangram Play
@@ -77,23 +105,23 @@
                 scene_lib = query.lib;
             }
             if (query.debug) {
-                build = "debug";
+                build = 'debug';
             }
 
-            if (scene_lib.indexOf("/") > -1) {
+            if (scene_lib.indexOf('/') > -1) {
                 // assume it's a full path
                 // check that it's a tangram library on a whitelisted domain
                 if (scene_lib.match(/^https?:\/\/(.*mapzen.com|localhost)(:[0-9]+)?\/.*tangram\.(min|debug)\.js$/)) {
                     var lib_url = scene_lib;
                 } else {
                     // noooo you don't
-                    console.log('lib param error:', scene_lib, "is not a valid tangram library, defaulting to " + default_scene_lib);
+                    console.log('lib param error:', scene_lib, 'is not a valid tangram library, defaulting to ' + default_scene_lib);
                     scene_lib = default_scene_lib;
                 }
             }
-            if (scene_lib.indexOf("/") == -1) {
+            if (scene_lib.indexOf('/') == -1) {
                 // assume it's a version # only
-                lib_url = "https://mapzen.com/tangram/"+scene_lib+"/tangram."+build+".js";
+                lib_url = 'https://mapzen.com/tangram/'+scene_lib+'/tangram.'+build+'.js';
             }
             if (query.gist) {
                 // read and interpret gist, also pass lib_url to load later
@@ -137,18 +165,18 @@
         // load a file from a URL
         function readTextFile(file, callback) {
             var rawFile = new XMLHttpRequest();
-            rawFile.overrideMimeType("application/json");
+            rawFile.overrideMimeType('application/json');
             try {
-                rawFile.open("GET", file, true);
+                rawFile.open('GET', file, true);
             } catch (e) {
-                console.error("Error opening file:", e);
+                console.error('Error opening file:', e);
             }
             rawFile.onreadystatechange = function() {
                 // readyState 4 = done
-                if (rawFile.readyState === 4 && rawFile.status == "200") {
+                if (rawFile.readyState === 4 && rawFile.status == '200') {
                     callback(rawFile.responseText);
                 }
-                else if (rawFile.readyState === 4 && rawFile.status == "404") {
+                else if (rawFile.readyState === 4 && rawFile.status == '404') {
                     console.error("404 – can't load file", file);
                 }
 
@@ -206,11 +234,11 @@
                 .then(initLeaflet) // Then Leaflet
                 // Then hash, which depends on Leaflet
                 .then(function() {
-                    return injectScript("src/leaflet-hash.js");
+                    return injectScript('src/leaflet-hash.js');
                 })
                 // Finally, mapzen-UI
                 .then(function() {
-                    return injectScript("https://mapzen.com/common/ui/mapzen-ui.min.js");
+                    return injectScript('https://mapzen.com/common/ui/mapzen-ui.min.js');
                 })
                 // Then initialize everything
                 .then(initMap)
@@ -228,13 +256,13 @@
             // console.log('Tangram version:', v)
             v = parseVersionString(v);
             if (v.major < 1 && v.minor < 8) {
-                leafletcss="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.0.0-beta.2/leaflet.css";
-                leafletjs="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.0.0-beta.2/leaflet.js";
+                leafletcss='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.0.0-beta.2/leaflet.css';
+                leafletjs='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.0.0-beta.2/leaflet.js';
             } else {
-                leafletcss="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.0.0-rc.3/leaflet.css";
-                leafletjs="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.0.0-rc.3/leaflet.js";
+                leafletcss='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.0.0-rc.3/leaflet.css';
+                leafletjs='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.0.0-rc.3/leaflet.js';
             }
-            document.getElementById("leafletcss").href = leafletcss;
+            document.getElementById('leafletcss').href = leafletcss;
 
             return injectScript(leafletjs);
         }
@@ -270,14 +298,14 @@
                 });
 
                 if (query.quiet) {
-                    layer.options.attribution = "";
+                    layer.options.attribution = '';
                     map.attributionControl.setPrefix('');
                     bugOptions = {
                         locate: false,
                         search: false
                     }
-                    window.addEventListener("load", function() {
-                        document.getElementById("mz-bug").style.display = "none";
+                    window.addEventListener('load', function() {
+                        document.getElementById('mz-bug').style.display = 'none';
                     });
                 }
 
@@ -296,7 +324,7 @@
 
                 layer.addTo(map);
 
-                var socket = io(window.location.protocol+'//'+SERVER+':'+PORT.toString());
+                socket = io(window.location.protocol+'//'+SERVER+':'+PORT.toString());
                 var socket_ID;
                 socket.on('connect', function () {
                     var channel = 'public';
@@ -305,84 +333,75 @@
                         channel = query['channel'];
                     }
 
+                    socket.on('wellcome', function (msg) {
+                        socket_ID = msg;
+                        console.log('Joining', channel, 'channel as user #', socket_ID);
+                    })
+
                     socket.emit('join', { channel: channel, scene: scene_url });
 
                     map.on('drag', function () {
-                        socket.emit("view", { position: map.getCenter(), zoom: map.getZoom()})
+                        socket.emit('view', { position: map.getCenter(), zoom: map.getZoom()})
                     });
 
-                    document.onmousemove = function (event) {
-                        var dot, eventDoc, doc, body, pageX, pageY;
-
-                        event = event || window.event; // IE-ism
-
-                        // If pageX/Y aren't available and clientX/Y are,
-                        // calculate pageX/Y - logic taken from jQuery.
-                        // (This is to support old IE)
-                        if (event.pageX == null && event.clientX != null) {
-                            eventDoc = (event.target && event.target.ownerDocument) || document;
-                            doc = eventDoc.documentElement;
-                            body = eventDoc.body;
-
-                            event.pageX = event.clientX +
-                              (doc && doc.scrollLeft || body && body.scrollLeft || 0) -
-                              (doc && doc.clientLeft || body && body.clientLeft || 0);
-                            event.pageY = event.clientY +
-                              (doc && doc.scrollTop  || body && body.scrollTop  || 0) -
-                              (doc && doc.clientTop  || body && body.clientTop  || 0 );
-                        }
-                        socket.emit("mouse", { x: event.pageX, y: event.pageY});
-                    }
+                    map.on('mousemove', function (mouse) {
+                        socket.emit('mouse', mouse.latlng);
+                    });
                     
-                    socket.on("position", function (msg) {
+                    socket.on('position', function (msg) {
                         map.setView(msg);
                     });
 
-                    socket.on("zoom", function (msg) {
+                    socket.on('zoom', function (msg) {
                         map.setZoom(msg, { animate: false });
                     });
 
-                    socket.on("view", function (msg) {
+                    socket.on('view', function (msg) {
                         map.setView(msg.position, msg.zoom);
                     });
 
                     function addUser(user_id) {
-                        console.log("New user", user_id);
-                        var user_dom = document.createElement("div");
+                        console.log('New user', user_id);
+                        var user_dom = document.createElement('div');
                         user_dom.id = user_id;
-                        user_dom.innerHTML = user_id;
-                        user_dom.className = "user";
-                        document.getElementById("overlay").appendChild(user_dom); 
+                        user_dom.innerHTML = '<div class="user_marker"></div><p class="user_label">'+user_id+'</p>';
+                        user_dom.className = 'user';
+                        document.getElementById('overlay').appendChild(user_dom); 
                     }
 
-                    socket.on("user_add", function (user) {
+                    socket.on('user_add', function (user) {
                        addUser(user);
                     });
 
-                    socket.on("mouse", function (user, msg) {
-                        // console.log(user, msg);
+                    socket.on('user_update', function (user, user_data) {
+                        var user_dom = document.getElementById(user);
+                        if (user_dom) {
+                            if (user_data.mouse) {
+                                var latLng = new L.latLng(user_data.mouse.lat, user_data.mouse.lng);
+                                var point = map.latLngToContainerPoint(latLng);
+                                user_dom.style.left = point.x + 'px';
+                                user_dom.style.top = point.y + 'px';
+                            }
 
-                        var dom = document.getElementById(user);
-                        if (dom) {
-                            dom.style.left = msg.x + 'px';
-                            dom.style.top = msg.y + 'px';
+                            if (user_data.name) {
+                                user_dom.innerHTML = '<div class="user_marker"></div><p class="user_label">'+user_data.name+'</p>';
+                            }
                         } else {
                             addUser(user);
                         }
                     });
 
-                    socket.on("user_del", function (user) {
-                        console.log("User", user, "just leave");
+                    socket.on('user_del', function (user) {
+                        console.log('User', user, 'just leave');
                         var dom = document.getElementById(user);
                         if (dom) {
-                            document.getElementById("overlay").removeChild(dom);
+                            document.getElementById('overlay').removeChild(dom);
                         }
                     });
 
-                    socket.on("wellcome", function (msg) {
-                        socket_ID = msg;
-                        console.log('Joining', channel, 'channel as user #', socket_ID);
-                    })
+                    document.getElementById('user_name').addEventListener('change', function (e) {
+                        socket.emit('change_name',e.target.value);
+                    });
                 });
 
                 return map;

@@ -51,7 +51,7 @@ io.on('connection', function (socket) {
 
         socket.on('mouse', function (msg) {
             users[socket.id].mouse = msg;
-            socket.broadcast.to(socket.channel).emit('mouse', socket.id, msg);
+            socket.broadcast.to(socket.channel).emit('user_update', socket.id, users[socket.id]);
         });
 
         socket.on('position', function (msg) {
@@ -68,6 +68,11 @@ io.on('connection', function (socket) {
             channels[socket.channel].zoom = msg.zoom;
             channels[socket.channel].position = msg.position;
             socket.broadcast.to(socket.channel).emit('view', msg);
+        });
+
+        socket.on('change_name', function (name) {
+            users[socket.id]['name'] = name;
+            socket.broadcast.to(socket.channel).emit('user_update', socket.id, users[socket.id]);
         });
 
         socket.on('disconnect', function () {
