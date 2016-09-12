@@ -287,6 +287,7 @@
                 layer.addTo(map);
 
                 var socket = io(window.location.protocol+'//'+SERVER+':'+PORT.toString());
+                var socket_ID;
                 socket.on('connect', function () {
                     var channel = 'public';
 
@@ -294,24 +295,28 @@
                         channel = query['channel'];
                     }
 
-                    console.log('Joining', channel, 'channel');
-                    socket.emit('join', channel);
-
-                    var broadcast_pos = function() {
-                        console.log("sending");
-                        socket.emit("message", { channel: channel, pos: map.getCenter(), zoom:map.getZoom()});
-                    }
+                    socket.emit('join', { channel: channel, scene: scene_url });
 
                     map.on('drag', function () {
-                        broadcast_pos();
+                        socket.emit("view", { position: map.getCenter(), zoom: map.getZoom()})
+                    });
+                    
+                    socket.on("position", function (msg) {
+                        map.setView(msg);
                     });
 
-                    socket.on("message", function (msg) {
-                        console.log("GOT", msg);
-                        if (msg.channel === channel) {
-                            map.setView(msg.pos,msg.zoom);
-                        }
+                    socket.on("zoom", function (msg) {
+                        map.setZoom(msg, { animate: false });
                     });
+
+                    socket.on("view", function (msg) {
+                        map.setView(msg.position, msg.zoom);
+                    });
+
+                    socket.on("wellcome", function (msg) {
+                        socket_ID = msg;
+                        console.log('Joining', channel, 'channel as user #', socket_ID);
+                    })
                 });
 
                 return map;

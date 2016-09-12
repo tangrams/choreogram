@@ -7,6 +7,7 @@ var express = require('express');
 var app = express();
 
 var channels = {};
+var users = {};
 
 var options = {
   key: fs.readFileSync('./key.pem'),
@@ -19,23 +20,55 @@ var server = https.createServer(options, app);
 var io = require('socket.io')(server);
 
 io.on('connection', function (socket) {
-    socket.broadcast.emit('user connected');
+    socket.channel = 'public';          // default channel
 
-    socket.on('join', function(room) {
-        if (!channels[room]) {
-            console.log("New channel", room);
-            // Default initial position
-            channels[room] = { channel: room, pos: { lat:40.70531887544228, lng: -74.00976419448853}, zoom: 15 };
+    // On join
+    socket.on('join', function (event) {
+        // Create user 
+        if (!users[socket.id]) {
+            users[socket.id] = event;   // store user data
         }
-        socket.emit('message', channels[room]);
-    });
 
-    socket.on('message', function (msg) {
-        channels[msg.channel] = msg;
-        socket.broadcast.emit('message', msg);
-    });
+        // Remember channel
+        socket.channel = event.channel;
+        // Add user to room
+        socket.join(socket.channel);
+        // Create channel if there is not
+        if (!channels[socket.channel]) {
+            console.log("New channel", socket.channel);
+            // Default initial position
+            channels[socket.channel] = { channel: socket.channel, position: { lat:40.70531887544228, lng: -74.00976419448853}, zoom: 15, n_users: 0 };
+        }
+        channels[socket.channel].n_users += 1.;
 
-    socket.on('disconnect', function () { });
+        // Return ID
+        socket.emit('wellcome', socket.id);
+        // send actual position of channel
+        socket.emit('position', channels[socket.channel].position); 
+        socket.emit('zoom', channels[socket.channel].zoom);
+
+        socket.on('position', function (msg) {
+            channels[socket.channel].position = msg;
+            socket.broadcast.to(socket.channel).emit('position', msg);
+        });
+
+        socket.on('zoom', function (msg) {
+            channels[socket.channel].zoom = msg;
+            socket.broadcast.to(socket.channel).emit('zoom', msg);
+        });
+
+        socket.on('view', function (msg) {
+            channels[socket.channel].zoom = msg.zoom;
+            channels[socket.channel].position = msg.position;
+            socket.broadcast.to(socket.channel).emit('view', msg);
+        });
+
+        socket.on('disconnect', function () {
+            socket.join(socket.channel);
+            channels[socket.channel].n_users -= 1.;
+            delete users[socket.id];
+        });
+    });
 });
 
 // viewed at http://localhost:8080
@@ -58,6 +91,11 @@ app.get('/src/leaflet-hash.js',function(req,res){
 app.get('/channels',function(req,res){
     res.header("Content-Type",'application/json');
     res.send(JSON.stringify(channels, null, 4));
+});
+
+app.get('/users',function(req,res){
+    res.header("Content-Type",'application/json');
+    res.send(JSON.stringify(users, null, 4));
 });
 
 server.listen(HTTPS_PORT, function() {
