@@ -33,43 +33,55 @@
         .user {
             position: absolute;
             z-index: 1000;
-            pointer-events: none;
             display: inline-block;
+            margin: 0px;
+            padding: 0px;
+            pointer-events: none;
         }
 
         .user_marker {
             display: inline-block;
             background-color: red;
-            width: 10px;
-            height: 10px;
+            width: 5px;
+            height: 5px;
+            margin-right: 3px;
+            margin-bottom: 5px;
             border-radius: 50%;
-            border-width: 2px;
+            border-width: 1px;
             border-radius: 50%;
             border-style: solid;
             border-color: white;
             color: white;
             text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+            pointer-events: none;
         }
 
         .user_label {
             display: inline-block;
             color: white;
+            font-size: 14px;
+            font-weight: 100;
+            font-family: helvetica, arial;
             text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+            margin: 0px;
+            padding: 0px;
+            pointer-events: none;
         }
 
-        #user_name {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            z-index: 10001;
+        .link {
+            pointer-events: all;
+            color: white;
+            font-size: 10px;
+            font-weight: 100;
+            font-family: helvetica, arial;
         }
+
     </style>
   </head>
 
   <body>
     <div id='map'></div>
     <div id='overlay'></div>
-    <input id='user_name' type='text' placeholder='Update your username'>
     
     <script>
         var SERVER = '54.209.68.133';
@@ -324,8 +336,8 @@
 
                 layer.addTo(map);
 
+                var socket_username = prompt("Please enter your name", "Harry Potter");
                 socket = io(window.location.protocol+'//'+SERVER+':'+PORT.toString());
-                var socket_ID;
                 socket.on('connect', function () {
                     var channel = 'public';
 
@@ -333,12 +345,7 @@
                         channel = query['channel'];
                     }
 
-                    socket.on('wellcome', function (msg) {
-                        socket_ID = msg;
-                        console.log('Joining', channel, 'channel as user #', socket_ID);
-                    })
-
-                    socket.emit('join', { channel: channel, scene: scene_url });
+                    socket.emit('join', { channel: channel, scene: scene_url, mouse: {lat: 0, lng: 0}, draggin: "false", name: socket_username });
 
                     map.on('drag', function () {
                         socket.emit('view', { position: map.getCenter(), zoom: map.getZoom()})
@@ -346,6 +353,14 @@
 
                     map.on('mousemove', function (mouse) {
                         socket.emit('mouse', mouse.latlng);
+                    });
+
+                    map.on('mousedown', function (mouse) {
+                        socket.emit('draggin', true);
+                    });
+
+                    map.on('mouseup', function (mouse) {
+                        socket.emit('draggin', false);
                     });
                     
                     socket.on('position', function (msg) {
@@ -360,19 +375,6 @@
                         map.setView(msg.position, msg.zoom);
                     });
 
-                    function addUser(user_id) {
-                        console.log('New user', user_id);
-                        var user_dom = document.createElement('div');
-                        user_dom.id = user_id;
-                        user_dom.innerHTML = '<div class="user_marker"></div><p class="user_label">'+user_id+'</p>';
-                        user_dom.className = 'user';
-                        document.getElementById('overlay').appendChild(user_dom); 
-                    }
-
-                    socket.on('user_add', function (user) {
-                       addUser(user);
-                    });
-
                     socket.on('user_update', function (user, user_data) {
                         var user_dom = document.getElementById(user);
                         if (user_dom) {
@@ -383,11 +385,23 @@
                                 user_dom.style.top = point.y + 'px';
                             }
 
-                            if (user_data.name) {
-                                user_dom.innerHTML = '<div class="user_marker"></div><p class="user_label">'+user_data.name+'</p>';
+                            if (user_data.draggin) {
+                                var marker = user_dom.getElementsByClassName('user_marker')[0];
+                                marker.style.backgroundColor = 'green';
+                            } else {
+                                var marker = user_dom.getElementsByClassName('user_marker')[0];
+                                marker.style.backgroundColor = 'red';
                             }
                         } else {
-                            addUser(user);
+                            console.log('New user', user_data.name);
+                            var user_dom = document.createElement('div');
+                            user_dom.id = user;
+                            user_dom.innerHTML = '<div class="user_marker"></div><p class="user_label">'+user_data.name+'</p>';
+                            if (user_data.scene !== scene_url) {
+                                user_dom.innerHTML += '&nbsp;<spline class="link">(<a class="link" href="'+window.location.origin+'/?channel='+channel+'&scene='+user_data.scene+'">'+(user_data.scene.split('\\').pop().split('/').pop().split('.'))[0]+'</a>)</spline>';
+                            }
+                            user_dom.className = 'user';
+                            document.getElementById('overlay').appendChild(user_dom); 
                         }
                     });
 
@@ -397,10 +411,6 @@
                         if (dom) {
                             document.getElementById('overlay').removeChild(dom);
                         }
-                    });
-
-                    document.getElementById('user_name').addEventListener('change', function (e) {
-                        socket.emit('change_name',e.target.value);
                     });
                 });
 

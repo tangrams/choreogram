@@ -6,111 +6,112 @@ var http = require('http');
 var express = require('express');
 var app = express();
 
-var channels = {};
+var channels = { public : { channel: "public", position: { lat:40.70531887544228, lng: -74.00976419448853}, zoom: 15, n_users: 0 } };
 var users = {};
 
 var options = {
-  key: fs.readFileSync('./key.pem'),
-  cert: fs.readFileSync('./cert.pem')
+    key: fs.readFileSync('./key.pem'),
+    cert: fs.readFileSync('./cert.pem')
 };
 var HTTPS_PORT = 8080;
 
 var server = https.createServer(options, app);
 // var server = http.createServer(app);
-var io = require('socket.io')(server);
 
-io.on('connection', function (socket) {
-    socket.channel = 'public';          // default channel
+var io = require('socket.io')(server);
+io.on('connection', (socket) => {
+    var channel_name = 'public';          // default channel
 
     // On join
-    socket.on('join', function (event) {
+    socket.on('join', (event) => {
+
         // Create user 
         if (!users[socket.id]) {
+            console.log("New User", event.name);
             users[socket.id] = event;   // store user data
         }
 
         // Remember channel
-        socket.channel = event.channel;
+        channel_name = event.channel;
         // Add user to room
-        socket.join(socket.channel);
+        socket.join(channel_name);
+
         // Create channel if there is not
-        if (!channels[socket.channel]) {
-            console.log("New channel", socket.channel);
+        if (!channels[channel_name]) {
+            console.log("New channel", channel_name);
             // Default initial position
-            channels[socket.channel] = { channel: socket.channel, position: { lat:40.70531887544228, lng: -74.00976419448853}, zoom: 15, n_users: 0 };
+            channels[channel_name] = { channel: channel_name, position: { lat:40.70531887544228, lng: -74.00976419448853}, zoom: 15, n_users: 0 };
         }
-        channels[socket.channel].n_users += 1.;
+        channels[channel_name].n_users += 1.;
 
-        // Return ID
-        socket.emit('wellcome', socket.id);
         // send actual position of channel
-        socket.emit('position', channels[socket.channel].position); 
-        socket.emit('zoom', channels[socket.channel].zoom);
+        socket.emit('position', channels[channel_name].position); 
+        socket.emit('zoom', channels[channel_name].zoom);
+        // socket.broadcast.to(channel_name).emit('user_update', socket.id, users[socket.id]);
 
-        socket.broadcast.to(socket.channel).emit('user_add', socket.id);
-
-        socket.on('mouse', function (msg) {
+        socket.on('mouse', (msg) => {
             users[socket.id].mouse = msg;
-            socket.broadcast.to(socket.channel).emit('user_update', socket.id, users[socket.id]);
+            socket.broadcast.to(channel_name).emit('user_update', socket.id, users[socket.id]);
         });
 
-        socket.on('position', function (msg) {
-            channels[socket.channel].position = msg;
-            socket.broadcast.to(socket.channel).emit('position', msg);
+        socket.on('draggin', (msg) => {
+            users[socket.id].draggin = msg;
+            socket.broadcast.to(channel_name).emit('user_update', socket.id, users[socket.id]);
         });
 
-        socket.on('zoom', function (msg) {
-            channels[socket.channel].zoom = msg;
-            socket.broadcast.to(socket.channel).emit('zoom', msg);
+        socket.on('position', (msg) => {
+            channels[channel_name].position = msg;
+            socket.broadcast.to(channel_name).emit('position', msg);
         });
 
-        socket.on('view', function (msg) {
-            channels[socket.channel].zoom = msg.zoom;
-            channels[socket.channel].position = msg.position;
-            socket.broadcast.to(socket.channel).emit('view', msg);
+        socket.on('zoom', (msg) => {
+            channels[channel_name].zoom = msg;
+            socket.broadcast.to(channel_name).emit('zoom', msg);
         });
 
-        socket.on('change_name', function (name) {
-            users[socket.id]['name'] = name;
-            socket.broadcast.to(socket.channel).emit('user_update', socket.id, users[socket.id]);
+        socket.on('view', (msg) => {
+            channels[channel_name].zoom = msg.zoom;
+            channels[channel_name].position = msg.position;
+            socket.broadcast.to(channel_name).emit('view', msg);
         });
 
-        socket.on('disconnect', function () {
-            socket.broadcast.to(socket.channel).emit('user_del', socket.id);
-            socket.join(socket.channel);
-            channels[socket.channel].n_users -= 1.;
+        socket.on('disconnect', () => {
+            console.log(event.name, "leave");
+            socket.broadcast.to(channel_name).emit('user_del', socket.id);
+            socket.leave(channel_name);
+            channels[channel_name].n_users -= 1.;
             delete users[socket.id];
         });
     });
 });
 
 // viewed at http://localhost:8080
-app.get('/',function(req,res){
+app.get('/', (req,res) => {
   res.sendFile(path.join(__dirname+'/index.html'));
 });
 
-app.get('/scene.yaml',function(req,res){
+app.get('/scene.yaml', (req,res) => {
   res.sendFile(path.join(__dirname+'/scene.yaml'));
 });
 
-app.get('/src/promise-7.0.4.min.js',function(req,res){
+app.get('/src/promise-7.0.4.min.js', (req,res) => {
   res.sendFile(path.join(__dirname+'/src/promise-7.0.4.min.js'));
 });
 
-app.get('/src/leaflet-hash.js',function(req,res){
+app.get('/src/leaflet-hash.js', (req,res) => {
   res.sendFile(path.join(__dirname+'/src/leaflet-hash.js'));
 });
 
-app.get('/channels',function(req,res){
+app.get('/channels', (req,res) => {
     res.header("Content-Type",'application/json');
     res.send(JSON.stringify(channels, null, 4));
 });
 
-app.get('/users',function(req,res){
+app.get('/users', (req,res) => {
     res.header("Content-Type",'application/json');
     res.send(JSON.stringify(users, null, 4));
 });
 
-server.listen(HTTPS_PORT, function() {
-  console.log('server up and running at %s port', HTTPS_PORT);
+server.listen(HTTPS_PORT, () => {
+    console.log('server up and running at %s port', HTTPS_PORT);
 });
