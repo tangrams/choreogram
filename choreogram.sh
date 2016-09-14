@@ -4,11 +4,8 @@ OS=$(uname)
 DIST="UNKNOWN"
 
 # Dependencies
-DEPS_COMMON="" 
 DEPS_LINUX_COMMON="curl"
-DEPS_LINUX_RASPBIAN=""
 DEPS_LINUX_UBUNTU="nodejs npm"
-DEPS_LINUX_REDHAT=""
 DEPS_DARWIN="node"
 
 # what linux distribution is?
@@ -38,14 +35,14 @@ case "$1" in
 
                 sudo apt-get update
                 sudo apt-get upgrade
-                sudo apt-get install $DEPS_COMMON $DEPS_LINUX_COMMON $DEPS_LINUX_UBUNTU
+                sudo apt-get install $DEPS_LINUX_COMMON $DEPS_LINUX_UBUNTU
                 sudo ln -s /usr/bin/nodejs /usr/local/bin/node
 
             elif [ "$DIST" == "Raspbian GNU/Linux" ]; then
 
                 sudo apt-get update
                 sudo apt-get upgrade
-                sudo apt-get install $DEPS_COMMON $DEPS_LINUX_COMMON $DEPS_LINUX_RASPBIAN
+                sudo apt-get install $DEPS_LINUX_COMMON
                 curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
                 sudo apt-get install nodejs -y
 
@@ -59,21 +56,27 @@ case "$1" in
 
             brew update
             brew upgrade
-            brew install $DEPS_COMMON $DEPS_DARWIN
+            brew install $DEPS_DARWIN
         fi
 
         npm install
 
-        if [ ! -e key.pem ] && [ ! -e cert.pem ]; then
-            openssl req -new -x509 -sha256 -newkey rsa:2048 -nodes -keyout key.pem -days 365 -out cert.pem
-        fi 
+        # if [ ! -e key.pem ] && [ ! -e cert.pem ]; then
+        #     openssl req -new -x509 -sha256 -newkey rsa:2048 -nodes -keyout key.pem -days 365 -out cert.pem
+        # fi 
         ;;
 
     start)
         while true ; do
-            npm start
+            sudo npm start
             sleep 5
         done
+        ;;
+
+    stop)
+        sudo kill -9 `pgrep -f npm`
+        sudo kill -9 `pgrep -f node`
+        ps aux  |  grep -i 'choreogram.sh'  | grep -v grep |  awk '{print $2}'  |  xargs kill -9
         ;;
 
     *)

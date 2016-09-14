@@ -2,9 +2,9 @@
   "name": "choreogram",
   "version": "1.0.0",
   "description": "Tangram's n sync",
-  "main": "app.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node app.js"
+    "start": "node server.js"
   },
   "repository": {
     "type": "git",

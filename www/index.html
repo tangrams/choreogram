@@ -1,19 +1,22 @@
 <!doctype html>
+
 <!--
     Tangram: real-time WebGL rendering for OpenStreetMap
     http://github.com/tangrams/tangram
     http://mapzen.com
 -->
+
 <html lang='en-us'>
   <head>
     <meta charset='utf-8'>
     <meta http-equiv='Content-Type' content='text/html; charset=utf-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'>
-    <title>Choreogram: tangram's n sync</title>
+    <title>Choreogram: tangram's in sync</title>
 
     <link id='leafletcss' rel='stylesheet' href='' />
     <script src='https://cdn.socket.io/socket.io-1.4.5.js'></script>
-    <script src='src/promise-7.0.4.min.js'></script>
+    <script src='lib/promise-7.0.4.min.js'></script>
+    <script src='client.js'></script>
 
     <style>
         body {
@@ -84,10 +87,7 @@
     <div id='overlay'></div>
     
     <script>
-        var SERVER = '54.209.68.133';
-        // SERVER = 'localhost';
-        var PORT = 8080; 
-        var map, scene, hash, query, scene_url, socket;
+        var map, scene, hash, query, scene_url;
 
         function parseQuery (qstr) {
             var query = {};
@@ -246,7 +246,7 @@
                 .then(initLeaflet) // Then Leaflet
                 // Then hash, which depends on Leaflet
                 .then(function() {
-                    return injectScript('src/leaflet-hash.js');
+                    return injectScript('lib/leaflet-hash.js');
                 })
                 // Finally, mapzen-UI
                 .then(function() {
@@ -336,86 +336,9 @@
 
                 layer.addTo(map);
 
-                var socket_username = prompt("Please enter your name", "Harry Potter");
-                socket = io(window.location.protocol+'//'+SERVER+':'+PORT.toString());
-                socket.on('connect', function () {
-                    var channel = 'public';
-
-                    if (query['channel']) {
-                        channel = query['channel'];
-                    }
-
-                    socket.emit('join', { channel: channel, scene: scene_url, mouse: {lat: 0, lng: 0}, draggin: "false", name: socket_username });
-
-                    map.on('drag', function () {
-                        socket.emit('view', { position: map.getCenter(), zoom: map.getZoom()})
-                    });
-
-                    map.on('mousemove', function (mouse) {
-                        socket.emit('mouse', mouse.latlng);
-                    });
-
-                    map.on('mousedown', function (mouse) {
-                        socket.emit('draggin', true);
-                    });
-
-                    map.on('mouseup', function (mouse) {
-                        socket.emit('draggin', false);
-                    });
-                    
-                    socket.on('position', function (msg) {
-                        map.setView(msg);
-                    });
-
-                    socket.on('zoom', function (msg) {
-                        map.setZoom(msg, { animate: false });
-                    });
-
-                    socket.on('view', function (msg) {
-                        map.setView(msg.position, msg.zoom);
-                    });
-
-                    socket.on('user_update', function (user, user_data) {
-                        var user_dom = document.getElementById(user);
-                        if (user_dom) {
-                            if (user_data.mouse) {
-                                var latLng = new L.latLng(user_data.mouse.lat, user_data.mouse.lng);
-                                var point = map.latLngToContainerPoint(latLng);
-                                user_dom.style.left = point.x + 'px';
-                                user_dom.style.top = point.y + 'px';
-                            }
-
-                            if (user_data.draggin) {
-                                var marker = user_dom.getElementsByClassName('user_marker')[0];
-                                marker.style.backgroundColor = 'green';
-                            } else {
-                                var marker = user_dom.getElementsByClassName('user_marker')[0];
-                                marker.style.backgroundColor = 'red';
-                            }
-                        } else {
-                            console.log('New user', user_data.name);
-                            var user_dom = document.createElement('div');
-                            user_dom.id = user;
-                            user_dom.innerHTML = '<div class="user_marker"></div><p class="user_label">'+user_data.name+'</p>';
-                            if (user_data.scene !== scene_url) {
-                                user_dom.innerHTML += '&nbsp;<spline class="link">(<a class="link" href="'+window.location.origin+'/?channel='+channel+'&scene='+user_data.scene+'">'+(user_data.scene.split('\\').pop().split('/').pop().split('.'))[0]+'</a>)</spline>';
-                            }
-                            user_dom.className = 'user';
-                            document.getElementById('overlay').appendChild(user_dom); 
-                        }
-                    });
-
-                    socket.on('user_del', function (user) {
-                        console.log('User', user, 'just leave');
-                        var dom = document.getElementById(user);
-                        if (dom) {
-                            document.getElementById('overlay').removeChild(dom);
-                        }
-                    });
-                });
+                start_choreogram_client();
 
                 return map;
-
             }());
             MPZN.bug(bugOptions);
         }
