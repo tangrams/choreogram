@@ -49,6 +49,8 @@ This flexibility will allow you to re use this tools for different porposes, lik
 * [Matrix](http://54.209.68.133/?scene=https://raw.githubusercontent.com/tangrams/tangram-sandbox/gh-pages/styles/matrix.yaml)
 * [Tron 1.0](http://54.209.68.133/?scene=https://raw.githubusercontent.com/tangrams/tangram-sandbox/gh-pages/styles/tron.yaml) or [Tron 2.0](http://54.209.68.133/?scene=https://tangrams.github.io/tron/tron.yaml)
 
+![](imgs/00.gif)
+
 ## Thanks to
 
 * [Brett Camper](https://twitter.com/professorlemeza), [Peter Richardson](https://twitter.com/meetar) and [Lou Huang](https://twitter.com/saikofish) for [tangram-frame](https://github.com/tangrams/tangram-frame) wich the client is build on top.
