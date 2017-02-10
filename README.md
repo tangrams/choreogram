@@ -47,7 +47,7 @@ This flexibility will allow you to re use this tools for different porposes, lik
 * [Default](http://54.209.68.133/)
 * [Blueprint](http://54.209.68.133/?scene=https://raw.githubusercontent.com/tangrams/tangram-sandbox/gh-pages/styles/blueprint.yaml)
 * [Matrix](http://54.209.68.133/?scene=https://raw.githubusercontent.com/tangrams/tangram-sandbox/gh-pages/styles/matrix.yaml)
-* [Tron 1.0](http://54.209.68.133/?scene=https://raw.githubusercontent.com/tangrams/tangram-sandbox/gh-pages/styles/tron.yaml) or [Tron 2.0](http://54.209.68.133/?scene=https://tangrams.github.io/tron/tron.yaml)
+* [Tron 1.0](http://54.209.68.133/?scene=https://raw.githubusercontent.com/tangrams/tangram-sandbox/gh-pages/styles/tron.yaml) or [Tron 2.0](http://54.209.68.133/?scene=https://tangrams.github.io/tron-style/tron-style.yaml)
 
 ![](imgs/00.gif)
 
